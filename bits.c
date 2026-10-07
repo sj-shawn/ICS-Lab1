@@ -2,7 +2,7 @@
  * CS:APP Data Lab 
  * 
  * <Please put your name and userid here>
- * 
+ * 周益轩 25303090066
  * bits.c - Source file with your solutions to the Lab.
  *          This is the file you will hand in to your instructor.
  *
@@ -146,7 +146,7 @@ NOTES:
  *   Rating: 1
  */
 int signMask(void) {
-  return 1;
+  return 1<<31;
 }
 
 // P2
@@ -158,7 +158,7 @@ int signMask(void) {
  *   Rating: 2
  */
 int bitXor(int x, int y) {
-	return 2;
+	return ~(~x & ~y) & ~(x & y);
 }
 
 // P3
@@ -170,7 +170,7 @@ int bitXor(int x, int y) {
  *   Rating: 3
  */
 int negativePart(int x){
-  return 3;
+  return (~x + 1) & (x >> 31);
 }
 
 
@@ -185,7 +185,10 @@ int negativePart(int x){
  *   Rating: 4
  */
 int copyByteWithin(int x, int src, int dst) {
-  return 4;
+  int s = src << 3;
+  int d = dst << 3;
+  int mask_d = ~(0x000000FF<<d);
+  return (x & mask_d) | (((x >> s) & 0x000000FF) <<d);
 }
 
 // P5
@@ -198,7 +201,7 @@ int copyByteWithin(int x, int src, int dst) {
  *   Rating: 4
  */
 int logicalShift(int x, int n) {
-  return 5;
+  return (x >> n) & ~ (( 1 << 31 ) >> n << 1);
 }
 
 // P6
@@ -210,7 +213,10 @@ int logicalShift(int x, int n) {
  *   Rating: 4
  */
 int swapNibblePairs(int x) {
-  return 6;
+  int mask = 0x0f;
+    mask = mask | (mask << 8);
+    mask = mask | (mask << 16);
+    return ((x & mask) << 4) | ((x >> 4) & mask);
 }
 
 // P7
@@ -223,7 +229,8 @@ int swapNibblePairs(int x) {
  *   Rating: 4
  */
 int secondLowestZeroBit(int x) {
-  return 7;
+  int first_zero = x | (x + 1);
+  return  ~first_zero & (first_zero + 1);
 }
 
 // P8
@@ -236,7 +243,12 @@ int secondLowestZeroBit(int x) {
  *   Rating: 5
  */
 int oddParity(int x) {
-  return 8;
+  int y = x ^ (x >> 16);
+    y = y ^ (y >> 8);
+    y = y ^ (y >> 4);
+    y = y ^ (y >> 2);
+    y = y ^ (y >> 1);
+    return (y & 1) ^ 1;
 }
 
 // P9
@@ -249,7 +261,9 @@ int oddParity(int x) {
  *   Rating: 5
  */
 int rotateRightBits(int x, int n) {
-  return 9;
+  int m = n & 31;
+  int k = (32 + (~m + 1)) & 31;        
+  return ((x >> m) & ~(~0 << k)) | (x << k);
 }
 
 // P10
@@ -264,7 +278,9 @@ int rotateRightBits(int x, int n) {
  *   Rating: 5
  */
 int roundEvenPow2(int x, int n) {
-  return 10;
+  int half = 1 << (n + ~0);               
+  int bias = half + ~0 + ((x >> n) & 1);  
+  return (x + bias) & ~((1 << n) + ~0);
 }
 
 // P11
@@ -280,7 +296,15 @@ int roundEvenPow2(int x, int n) {
  *   Rating: 5
  */
 int midpointTowardFirst(int x, int y) {
-  return 11;
+  int sx = (x >> 31) & 1;
+  int sy = (y >> 31) & 1;
+
+  int samesign = !(sx ^ sy);
+  int large =((sx ^ sy) & sy) |(samesign & (((y + (~x + 1)) >> 31) & 1));
+
+  int odd = (x ^ y) & 1;
+
+  return (x >> 1) + (y >> 1) + ((x & y & 1) | (large & odd));
 }
 
 
@@ -294,7 +318,23 @@ int midpointTowardFirst(int x, int y) {
  *   Rating: 7
  */
 int isBetweenEitherOrder(int x, int a, int b) {
-  return 12;
+  int sx = (x >> 31) & 1;
+  int sa = (a >> 31) & 1;
+  int sb = (b >> 31) & 1;
+
+  int xa = x + (~a + 1);
+  int xb = x + (~b + 1);
+
+  int diffA = sx ^ sa;
+  int diffB = sx ^ sb;
+
+  int x_ge_a = (diffA & !sx) | (!diffA & !(xa >> 31));
+  int x_le_a = (diffA & sx) | (!diffA & ((xa >> 31) | !xa));
+
+  int x_ge_b = (diffB & !sx) | (!diffB & !(xb >> 31));
+  int x_le_b = (diffB & sx) | (!diffB & ((xb >> 31) | !xb));
+
+  return (x_ge_a & x_le_b) | (x_ge_b & x_le_a);
 }
 
 // P13
@@ -307,7 +347,22 @@ int isBetweenEitherOrder(int x, int a, int b) {
  *   Rating: 7
  */
 int mul5Sat(int x) {
-  return 13;
+  int sx = x >> 31;
+  int x_abs = (x ^ sx) + (sx & 1);
+
+  int m = !!(x_abs >> 29);
+  int x_5_abs = (x_abs << 2) + x_abs;
+  int n = (x_5_abs >> 31) & 1;
+
+  int overflow = m | n;
+  int mask = overflow << 31 >> 31;
+  int int_min = 1 << 31;
+  int int_max = ~int_min;
+
+  int saturated = (sx & int_min) | (~sx & int_max);
+  int result = (x_5_abs ^ sx) + (sx & 1);
+
+  return (mask & saturated) | (~mask & result);
 }
 
 // P14
@@ -320,7 +375,25 @@ int mul5Sat(int x) {
  *   Rating: 7
  */
 int classifyAdd3(int x, int y, int z) {
-  return 14;
+  int sx = (x >> 31) & 1;
+  int sy = (y >> 31) & 1;
+  int sum_xy = x + y;
+  int sxy = (sum_xy >> 31) & 1;
+
+  int pos1 = !(sx | sy) & sxy;
+  int neg1 = sx & sy & !sxy;
+  int overflow1 = pos1 + (~neg1 + 1);
+
+  int sz = (z >> 31) & 1;
+  int sum_xyz = sum_xy + z;
+  int sxyz = (sum_xyz >> 31) & 1;
+
+  int pos2 = !(sxy | sz) & sxyz;
+  int neg2 = sxy & sz & !sxyz;
+  int overflow2 = pos2 + (~neg2 + 1);
+
+  int total_overflow = overflow1 + overflow2;
+  return (total_overflow >> 31) | !!total_overflow;
 }
 
 // P15
@@ -337,7 +410,77 @@ int classifyAdd3(int x, int y, int z) {
  *   Rating: 7
  */
 unsigned floatScaleThreeHalves(unsigned uf) {
-  return 15;
+  unsigned F = uf & 0x7FFFFF;
+  unsigned E = (uf >> 23) & 0xFF;
+  unsigned S = uf >> 31;
+  unsigned F_3;
+  unsigned q;
+  unsigned F_new =F;
+  unsigned E_new = E;
+
+  if(E == 0xFF){  // NaN与无穷大这两种情况合并，返回原值 
+    E_new = E;
+    F_new = F;
+  }
+  else if (E == 0) {
+        // 零或非规格化数
+        F_3 = (F << 1) + F;
+        q = F_3 >> 1;
+
+        // 除以2，正好一半时舍入到偶数
+        if ((F_3 & 1u) && (q & 1u)) {
+            q++;
+        }
+
+        // 必须在舍入之后判断是否进入规格化范围 
+        if (q & (1u << 23)) {
+            E_new = 1;
+        }
+        else {
+            E_new = 0;
+        }
+
+        F_new = q & 0x7FFFFFu;
+    }
+  else{     // 来判断规格化数的情况
+        F = F | (1 << 23);  // 补上隐式1
+        F_3 = (F << 1) + F;
+        unsigned n = !!(F_3 & (1 << 25));  // 判断是否有进位
+        if (n){  // 进位了，最高位在第26位
+              E_new = E + 1;
+              // 下面开始判断最后一位的保留情况
+              if ((F_3 & 1) && (F_3 & 2)){  // 最后两位都是1
+              F_new = ((F_3 + 1) >> 2) & 0x7FFFFF;
+              }
+              else if(!(F_3 & 1) && (F_3 & 2)){ // 最后两位是10，看倒数第三位
+                    if (F_3 & 4){  // 倒数第三位为1，进位
+                    F_new = ((F_3 >> 2) + 1) & 0x7FFFFF;
+                    }
+                    else{
+                          F_new = (F_3 >> 2) & 0x7FFFFF;
+                    }
+              }
+              else{  // 剩下的情况都不用进位
+                    F_new = (F_3 >> 2) & 0x7FFFFF;
+              }
+        }
+        else{ // 没有进位
+              E_new = E;
+              // 只用考虑最后一位
+              if ((F_3 & 1) && (F_3 & 2)){
+                    F_new = ((F_3 + 1) >> 1) & 0x7FFFFF;
+              }
+              else{
+                    F_new = (F_3 >> 1) & 0x7FFFFF;
+              }
+        }
+        if (E_new == 0xFFu) {
+          // 溢出为无穷大 
+          F_new = 0;
+        }
+      }
+  
+      return (S << 31) | (E_new << 23) | F_new;
 }
 
 // P16
@@ -353,8 +496,59 @@ unsigned floatScaleThreeHalves(unsigned uf) {
  *   Rating: 10
  */
 unsigned floatRoundEven(unsigned uf) {
-  return 16;
+  unsigned F = uf & 0x7FFFFF;
+  unsigned E = (uf >> 23) & 0xFF;
+  unsigned S = (uf >> 31) & 1;
+  unsigned F_new = F;
+  unsigned near_int;
+  unsigned shift;
+  unsigned m;  // 取整后的小数部分 
+  unsigned E_new = E;
+  if (E == 0xFF){   //NaN 或者 无穷大不变
+        E_new = E;
+        F_new = F;
+  }
+  else{
+        if (E < (0x7F - 1)){  // 系数最大为2的-2次方,直接返回0
+              E_new = 0;
+              F_new = 0;  
+        }
+        else if (E >= (0x7F + 23)){ //没有小数，整数直接保留
+              E_new = E;
+              F_new = F;
+        }  
+        else{
+              F = F | (1 << 23); // 加上隐式1
+              shift = 150 - E; // 需要移动的位数
+              near_int = F >> shift;
+              m = F & ((1u << shift) - 1);  // 小数部分
+              if((near_int & 1) && (m >> (shift - 1))){    // 进位到偶数,超过一半
+                    near_int = near_int + 1;
+              }
+              else if(!(near_int & 1) && (m > (1 << (shift-1)))){ // 刚好中间，进位到偶数
+                    near_int = near_int + 1;
+              }
+              if (near_int == 0) {
+                    E_new = 0;
+                    F_new = 0;
+              }
+              else {
+                    E_new = E;
+                    F_new = near_int << shift;
+
+              if (F_new & (1u << 24)) {
+                    F_new >>= 1;
+                    E_new++;
+              }
+
+              F_new &= 0x7FFFFFu;
+              }
+        }
+  }
+  return (S << 31) | (E_new << 23) | F_new;
 }
+  
+
 
 // P17
 /*
@@ -367,7 +561,64 @@ unsigned floatRoundEven(unsigned uf) {
  *   Rating: 10
  */
 unsigned float_i2f(int x) {
-  return 17;
+    unsigned ux = x;
+    unsigned S = ux & 0x80000000u;
+    unsigned x_abs;
+
+    unsigned E = 0;
+    unsigned F = 0;
+    unsigned shift;
+    unsigned q;
+    unsigned remainder;
+    unsigned half;
+
+    int i = 31;
+    // 转换成绝对值
+    if (S) {
+        x_abs = ~ux + 1u;
+    }
+    else {
+        x_abs = ux;
+    }
+
+    // 找到最高位的1
+    while (i >= 0 && ((x_abs >> i) & 1u) == 0) {
+        i--;
+    }
+
+    if (i >= 0) {
+        E = i + 127;
+
+        if (i <= 23) {
+            // 未超过23位+1位隐藏
+            F = (x_abs << (23 - i)) & 0x7FFFFFu;
+        }
+        else {
+            // 有效位超过24位，需要舍弃低位。
+             
+            shift = i - 23;
+            q = x_abs >> shift;
+
+            remainder = x_abs & ((1u << shift) - 1u);
+            half = 1u << (shift - 1u);
+
+            if ((remainder > half) ||
+                ((remainder == half) && (q & 1u))) {
+                q++;
+            }
+
+            // 处理舍入的进位
+            if (q & (1u << 24)) {
+                q >>= 1;
+                E++;
+            }
+
+            // 去除最高位的1
+            F = q & 0x7FFFFFu;
+        }
+    }
+
+    return S | (E << 23) | F;
 }
 
 
