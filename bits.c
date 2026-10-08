@@ -632,7 +632,22 @@ unsigned float_i2f(int x) {
  *   Rating: 10
  */
 int bitCount(int x) {
-  return 18;
+  int mask1 = 0x55 | (0x55 << 8);
+  int mask2 = 0x33 | (0x33 << 8);
+  int mask3 = 0x0f | (0x0f << 8);
+  int mask4 = 0xff | (0xff << 16);
+  int mask5 = 0xff | (0xff << 8);
+
+  mask1 = mask1 | (mask1 << 16);   // 01010101
+  mask2 = mask2 | (mask2 << 16);   // 00110011
+  mask3 = mask3 | (mask3 << 16);   // 00001111
+
+  x = (x & mask1) + ((x >> 1) & mask1);
+  x = (x & mask2) + ((x >> 2) & mask2);
+  x = (x & mask3) + ((x >> 4) & mask3);
+  x = (x & mask4) + ((x >> 8) & mask4);
+  x = (x & mask5) + ((x >> 16) & mask5); 
+  return x;
 }
 
 // P19
@@ -646,5 +661,18 @@ int bitCount(int x) {
  */
 int bitReverse(int x)
 {
-  return 19;
+    /* 逐级构造掩码，再交换相邻的位组 */
+    int mask16 = 0xff | (0xff << 8);
+    int mask8  = mask16 ^ (mask16 << 8);
+    int mask4  = mask8  ^ (mask8  << 4);
+    int mask2  = mask4  ^ (mask4  << 2);
+    int mask1  = mask2  ^ (mask2  << 1);
+
+    x = ((x >> 1) & mask1) | ((x & mask1) << 1);
+    x = ((x >> 2) & mask2) | ((x & mask2) << 2);
+    x = ((x >> 4) & mask4) | ((x & mask4) << 4);
+    x = ((x >> 8) & mask8) | ((x & mask8) << 8);
+    x = (x << 16) | ((x >> 16) & mask16);
+
+    return x;
 }
