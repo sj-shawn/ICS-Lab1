@@ -146,6 +146,7 @@ NOTES:
  *   Rating: 1
  */
 int signMask(void) {
+  // 移位实现
   return 1<<31;
 }
 
@@ -158,6 +159,7 @@ int signMask(void) {
  *   Rating: 2
  */
 int bitXor(int x, int y) {
+  // 逻辑表达式把情况列出来
 	return ~(~x & ~y) & ~(x & y);
 }
 
@@ -185,6 +187,7 @@ int negativePart(int x){
  *   Rating: 4
  */
 int copyByteWithin(int x, int src, int dst) {
+  // 用掩码把目标提取出来后移到对应位置 或
   int s = src << 3;
   int d = dst << 3;
   int mask_d = ~(0x000000FF<<d);
@@ -201,6 +204,7 @@ int copyByteWithin(int x, int src, int dst) {
  *   Rating: 4
  */
 int logicalShift(int x, int n) {
+  // 移位 + 处理符号位移位造成的影响
   return (x >> n) & ~ (( 1 << 31 ) >> n << 1);
 }
 
@@ -213,6 +217,7 @@ int logicalShift(int x, int n) {
  *   Rating: 4
  */
 int swapNibblePairs(int x) {
+  // 使用掩码实现
   int mask = 0x0f;
     mask = mask | (mask << 8);
     mask = mask | (mask << 16);
@@ -229,6 +234,7 @@ int swapNibblePairs(int x) {
  *   Rating: 4
  */
 int secondLowestZeroBit(int x) {
+  // 利用性质： +1 消除最后一个0，
   int first_zero = x | (x + 1);
   return  ~first_zero & (first_zero + 1);
 }
@@ -243,6 +249,7 @@ int secondLowestZeroBit(int x) {
  *   Rating: 5
  */
 int oddParity(int x) {
+  // 逐位异或，最终得到1的个数的奇偶性
   int y = x ^ (x >> 16);
     y = y ^ (y >> 8);
     y = y ^ (y >> 4);
@@ -261,6 +268,7 @@ int oddParity(int x) {
  *   Rating: 5
  */
 int rotateRightBits(int x, int n) {
+  // 注意点：n要对31取模，因为移动32位相当于不变
   int m = n & 31;
   int k = (32 + (~m + 1)) & 31;        
   return ((x >> m) & ~(~0 << k)) | (x << k);
@@ -278,6 +286,7 @@ int rotateRightBits(int x, int n) {
  *   Rating: 5
  */
 int roundEvenPow2(int x, int n) {
+  // 先加一个偏移量，再清零低 n 位，把 x 舍入到最近的 2^n 的倍数
   int half = 1 << (n + ~0);               
   int bias = half + ~0 + ((x >> n) & 1);  
   return (x + bias) & ~((1 << n) + ~0);
@@ -296,11 +305,13 @@ int roundEvenPow2(int x, int n) {
  *   Rating: 5
  */
 int midpointTowardFirst(int x, int y) {
+  // 为了避免越界，先把两个数除以二再相加，再判定是否需要舍入
+  // 判断舍入：先判断符号，再比较大小
   int sx = (x >> 31) & 1;
   int sy = (y >> 31) & 1;
 
   int samesign = !(sx ^ sy);
-  int large =((sx ^ sy) & sy) |(samesign & (((y + (~x + 1)) >> 31) & 1));
+  int large =((sx ^ sy) & sy) | (samesign & (((y + (~x + 1)) >> 31) & 1));
 
   int odd = (x ^ y) & 1;
 
@@ -318,23 +329,23 @@ int midpointTowardFirst(int x, int y) {
  *   Rating: 7
  */
 int isBetweenEitherOrder(int x, int a, int b) {
-  int sx = (x >> 31) & 1;
-  int sa = (a >> 31) & 1;
-  int sb = (b >> 31) & 1;
+    // 依次比较上下界，比较需要考虑符号
+    int sx = (x >> 31) & 1;
+    int sa = (a >> 31) & 1;
+    int sb = (b >> 31) & 1;
 
-  int xa = x + (~a + 1);
-  int xb = x + (~b + 1);
+    int xa = x + (~a + 1);
+    int xb = x + (~b + 1);
 
-  int diffA = sx ^ sa;
-  int diffB = sx ^ sb;
+    int diffA = sx ^ sa;
+    int diffB = sx ^ sb;
 
-  int x_ge_a = (diffA & !sx) | (!diffA & !(xa >> 31));
-  int x_le_a = (diffA & sx) | (!diffA & ((xa >> 31) | !xa));
+    int x_ge_a = (diffA & (!sx)) | ((!diffA) & (!(xa >> 31)));
+    int x_le_a = (diffA & sx) | ((!diffA) & ((xa >> 31) | (!xa)));
+    int x_ge_b = (diffB & (!sx)) | ((!diffB) & (!(xb >> 31)));
+    int x_le_b = (diffB & sx) | ((!diffB) & ((xb >> 31) | (!xb)));
 
-  int x_ge_b = (diffB & !sx) | (!diffB & !(xb >> 31));
-  int x_le_b = (diffB & sx) | (!diffB & ((xb >> 31) | !xb));
-
-  return (x_ge_a & x_le_b) | (x_ge_b & x_le_a);
+    return (x_ge_a & x_le_b) | (x_ge_b & x_le_a);
 }
 
 // P13
@@ -347,6 +358,8 @@ int isBetweenEitherOrder(int x, int a, int b) {
  *   Rating: 7
  */
 int mul5Sat(int x) {
+  // ×5 = ×4 + ×1 ，分别判断× 5 / 4有没有越界
+  // 如果越界，用掩码映射到最大值以及最小值
   int sx = x >> 31;
   int x_abs = (x ^ sx) + (sx & 1);
 
@@ -375,6 +388,7 @@ int mul5Sat(int x) {
  *   Rating: 7
  */
 int classifyAdd3(int x, int y, int z) {
+  // 把三个相加的问题差分成两个 两个数相加的问题，依次做判断
   int sx = (x >> 31) & 1;
   int sy = (y >> 31) & 1;
   int sum_xy = x + y;
@@ -410,29 +424,32 @@ int classifyAdd3(int x, int y, int z) {
  *   Rating: 7
  */
 unsigned floatScaleThreeHalves(unsigned uf) {
-  unsigned F = uf & 0x7FFFFF;
-  unsigned E = (uf >> 23) & 0xFF;
-  unsigned S = uf >> 31;
-  unsigned F_3;
-  unsigned q;
-  unsigned F_new =F;
-  unsigned E_new = E;
+    // 分三种情况谈论，规格化/非规格化需要判断是否进位
+    unsigned F = uf & 0x7FFFFF;
+    unsigned E = (uf >> 23) & 0xFF;
+    unsigned S = uf >> 31;
+    unsigned F_3;
+    unsigned q;
+    unsigned n;
+    unsigned F_new = F;
+    unsigned E_new = E;
 
-  if(E == 0xFF){  // NaN与无穷大这两种情况合并，返回原值 
-    E_new = E;
-    F_new = F;
-  }
-  else if (E == 0) {
+    if (E == 0xFF) {
+        // NaN 和无穷大保持不变 
+        E_new = E;
+        F_new = F;
+    }
+    else if (E == 0) {
         // 零或非规格化数
         F_3 = (F << 1) + F;
         q = F_3 >> 1;
 
-        // 除以2，正好一半时舍入到偶数
+        // 恰好在中点时，舍入到偶数
         if ((F_3 & 1u) && (q & 1u)) {
             q++;
         }
 
-        // 必须在舍入之后判断是否进入规格化范围 
+        // 舍入后可能进入规格化范围 
         if (q & (1u << 23)) {
             E_new = 1;
         }
@@ -442,45 +459,51 @@ unsigned floatScaleThreeHalves(unsigned uf) {
 
         F_new = q & 0x7FFFFFu;
     }
-  else{     // 来判断规格化数的情况
-        F = F | (1 << 23);  // 补上隐式1
+    else {
+        // 规格化数：补上隐式的最高位 1 
+        F = F | (1 << 23);
         F_3 = (F << 1) + F;
-        unsigned n = !!(F_3 & (1 << 25));  // 判断是否有进位
-        if (n){  // 进位了，最高位在第26位
-              E_new = E + 1;
-              // 下面开始判断最后一位的保留情况
-              if ((F_3 & 1) && (F_3 & 2)){  // 最后两位都是1
-              F_new = ((F_3 + 1) >> 2) & 0x7FFFFF;
-              }
-              else if(!(F_3 & 1) && (F_3 & 2)){ // 最后两位是10，看倒数第三位
-                    if (F_3 & 4){  // 倒数第三位为1，进位
+        n = !!(F_3 & (1 << 25));
+
+        if (n) {
+            E_new = E + 1;
+
+            // 需要舍弃两位：11 向上舍入 
+            if ((F_3 & 1) && (F_3 & 2)) {
+                F_new = ((F_3 + 1) >> 2) & 0x7FFFFF;
+            }
+            else if (!(F_3 & 1) && (F_3 & 2)) {
+                // 10 是中点，根据保留部分的奇偶舍入
+                if (F_3 & 4) {
                     F_new = ((F_3 >> 2) + 1) & 0x7FFFFF;
-                    }
-                    else{
-                          F_new = (F_3 >> 2) & 0x7FFFFF;
-                    }
-              }
-              else{  // 剩下的情况都不用进位
+                }
+                else {
                     F_new = (F_3 >> 2) & 0x7FFFFF;
-              }
+                }
+            }
+            else {
+                F_new = (F_3 >> 2) & 0x7FFFFF;
+            }
         }
-        else{ // 没有进位
-              E_new = E;
-              // 只用考虑最后一位
-              if ((F_3 & 1) && (F_3 & 2)){
-                    F_new = ((F_3 + 1) >> 1) & 0x7FFFFF;
-              }
-              else{
-                    F_new = (F_3 >> 1) & 0x7FFFFF;
-              }
+        else {
+            E_new = E;
+
+            // 只舍弃一位，按最近偶数舍入 
+            if ((F_3 & 1) && (F_3 & 2)) {
+                F_new = ((F_3 + 1) >> 1) & 0x7FFFFF;
+            }
+            else {
+                F_new = (F_3 >> 1) & 0x7FFFFF;
+            }
         }
+
         if (E_new == 0xFFu) {
-          // 溢出为无穷大 
-          F_new = 0;
+            // 溢出为对应符号的无穷大
+            F_new = 0;
         }
-      }
-  
-      return (S << 31) | (E_new << 23) | F_new;
+    }
+
+    return (S << 31) | (E_new << 23) | F_new;
 }
 
 // P16
@@ -496,6 +519,7 @@ unsigned floatScaleThreeHalves(unsigned uf) {
  *   Rating: 10
  */
 unsigned floatRoundEven(unsigned uf) {
+  // 思路与上一题一样，分情况，然后各自去讨论
   unsigned F = uf & 0x7FFFFF;
   unsigned E = (uf >> 23) & 0xFF;
   unsigned S = (uf >> 31) & 1;
@@ -561,6 +585,7 @@ unsigned floatRoundEven(unsigned uf) {
  *   Rating: 10
  */
 unsigned float_i2f(int x) {
+    // 把整数转换成类似于科学计数法的形式，注意有些情况需要舍去/舍入最后几位 
     unsigned ux = x;
     unsigned S = ux & 0x80000000u;
     unsigned x_abs;
@@ -632,6 +657,7 @@ unsigned float_i2f(int x) {
  *   Rating: 10
  */
 int bitCount(int x) {
+  // 依次计算相邻2/ 4/ 8 /16位中1的个数
   int mask1 = 0x55 | (0x55 << 8);
   int mask2 = 0x33 | (0x33 << 8);
   int mask3 = 0x0f | (0x0f << 8);
@@ -660,8 +686,8 @@ int bitCount(int x) {
  *   Rating: 10
  */
 int bitReverse(int x)
-{
-    /* 逐级构造掩码，再交换相邻的位组 */
+{   // x与y交换可以用x^(x^y)来实现
+    // 逐级构造掩码，再交换相邻的位组 
     int mask16 = 0xff | (0xff << 8);
     int mask8  = mask16 ^ (mask16 << 8);
     int mask4  = mask8  ^ (mask8  << 4);
